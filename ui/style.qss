@@ -256,3 +256,125 @@ QFrame#telemetryStrip {
     max-height: 56px;
     min-height: 56px;
 }
+
+/* Analytics & Performance Logs */
+QPushButton#analyticsButton {
+    color: #39C5CF;
+    border: 1px solid #2E3A42;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+QPushButton#analyticsButton:hover {
+    color: #39C5CF;
+    border: 1px solid #39C5CF;
+}
+
+QLabel#analyticsBadge {
+    background-color: #0C1013;
+    color: #39C5CF;
+    border: 1px solid #39C5CF;
+    border-radius: 2px;
+    padding: 5px 10px;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+QLabel#analyticsStatus {
+    background-color: #0C1013;
+    color: #93A0A8;
+    border-top: 1px solid #232C33;
+    padding: 6px 10px;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 9px;
+}
+
+QFrame#metricCard {
+    background-color: #11161A;
+    border: 1px solid #232C33;
+    border-left: 2px solid #39C5CF;
+    border-radius: 2px;
+    min-height: 58px;
+}
+
+QLabel#metricValue {
+    color: #D9E0E4;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+}
+
+QLabel#stateStat {
+    background-color: #0C1013;
+    border: 1px solid #232C33;
+    border-radius: 2px;
+    padding: 6px 8px;
+}
+
+QTabWidget::pane {
+    background-color: #0A0D0F;
+    border: 1px solid #232C33;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background-color: #11161A;
+    color: #5B6770;
+    border: 1px solid #232C33;
+    padding: 7px 20px;
+    min-width: 110px;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+QTabBar::tab:hover {
+    color: #D9E0E4;
+    border-top: 1px solid #39C5CF;
+}
+
+QTabBar::tab:selected {
+    background-color: #0C1013;
+    color: #39C5CF;
+    border-top: 1px solid #39C5CF;
+    border-bottom: 1px solid #0C1013;
+}
+
+QTableView#analyticsTable {
+    background-color: #0C1013;
+    alternate-background-color: #11161A;
+    color: #D9E0E4;
+    border: 1px solid #232C33;
+    gridline-color: #232C33;
+    selection-background-color: #1A2126;
+    selection-color: #D9E0E4;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 9px;
+}
+
+QTableView#analyticsTable::item {
+    padding: 3px 7px;
+    border: none;
+    border-bottom: 1px solid #232C33;
+}
+
+QTableView#analyticsTable::item:selected {
+    border-top: 1px solid #39C5CF;
+    border-bottom: 1px solid #39C5CF;
+}
+
+QHeaderView::section {
+    background-color: #1A2126;
+    color: #93A0A8;
+    border: none;
+    border-right: 1px solid #232C33;
+    border-bottom: 1px solid #2E3A42;
+    padding: 6px 8px;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 8px;
+    font-weight: bold;
+}
+
+QTableCornerButton::section {
+    background-color: #1A2126;
+    border: 1px solid #232C33;
+}

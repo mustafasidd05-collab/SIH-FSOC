@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from PySide6.QtCore import QPointF, QRectF, QSize, QTimer, Qt
+from PySide6.QtCore import QPointF, QRectF, QSize, QStandardPaths, QTimer, Qt
 from PySide6.QtGui import QColor, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -35,6 +35,8 @@ from PySide6.QtWidgets import (
 
 from core.contracts import TelemetryPacket, TrackState
 from runtime.live_source import LiveTelemetrySource
+from telemetry.performance_logger import PerformanceLogger
+from ui.analytics_window import AnalyticsWindow
 from ui.charts import LockStateIndicator, RollingChart
 from ui.mock_telemetry import MockTelemetrySource
 from ui.overlay import VideoPane
@@ -233,10 +235,27 @@ class MainWindow(QMainWindow):
         time_scale: float = 1.0,
         use_live_source: bool = False,
         video_path: str | Path | None = None,
+        log_directory: str | Path | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.time_scale = time_scale
+        default_documents = QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.DocumentsLocation
+        )
+        self.log_directory = (
+            Path(log_directory)
+            if log_directory is not None
+            else Path(default_documents or Path.home())
+            / "FSOC Simulator"
+            / "performance_logs"
+        )
+        self.performance_logger = PerformanceLogger()
+        self.analytics_window: AnalyticsWindow | None = None
+        self._session_active = False
+        self._session_started = False
+        self._session_saved = False
+        self._last_log_path: Path | None = None
         self.setWindowTitle("FSOC Coarse-Alignment Tracking Simulator (SIH 26169)")
         self.setMinimumSize(1440, 900)
 
@@ -266,6 +285,10 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(lbl_title)
 
         header_layout.addStretch()
+
+        self.btn_analytics = QPushButton("ANALYTICS / LOGS")
+        self.btn_analytics.setObjectName("analyticsButton")
+        header_layout.addWidget(self.btn_analytics)
 
         self.lbl_state_chip = QLabel("[ SEARCH ]")
         self.lbl_state_chip.setObjectName("monoNum")
@@ -327,6 +350,7 @@ class MainWindow(QMainWindow):
         # Wire Run Button
         self.config_panel.btn_run.toggled.connect(self._on_run_toggled)
         self.config_panel.btn_load_video.clicked.connect(self._on_load_video_clicked)
+        self.btn_analytics.clicked.connect(self._show_analytics)
         self.video_pane.target_selected.connect(self._on_target_selected)
 
         # Clock timer for UTC header
@@ -336,11 +360,58 @@ class MainWindow(QMainWindow):
 
     def _on_run_toggled(self, checked: bool) -> None:
         if checked:
+            self._session_active = True
+            self._session_started = True
             self.config_panel.btn_run.setText("STOP SIMULATION")
             self.telemetry_source.start()
         else:
             self.config_panel.btn_run.setText("START SIMULATION")
             self.telemetry_source.stop()
+            self._session_active = False
+            self._finalize_session()
+
+    def _show_analytics(self) -> None:
+        """Open or focus the single non-modal analytics page."""
+        if self.analytics_window is None:
+            self.analytics_window = AnalyticsWindow(
+                self.performance_logger,
+                self.log_directory,
+                parent=self,
+            )
+            self.analytics_window.live_json_exported.connect(
+                self._on_live_log_exported
+            )
+        self.analytics_window.show()
+        self.analytics_window.raise_()
+        self.analytics_window.activateWindow()
+
+    def _finalize_session(self) -> Path | None:
+        """Persist the completed run once and expose it to the analytics page."""
+        if self._session_saved or not self.performance_logger.packets:
+            return self._last_log_path
+        if self._last_log_path is None:
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
+            filepath = self.log_directory / f"fsoc_run_{timestamp}.json"
+        else:
+            filepath = self._last_log_path
+        try:
+            self.performance_logger.export_json(filepath)
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                "Performance Log Save Failed",
+                f"The run completed, but its performance log could not be saved:\n{exc}",
+            )
+            return None
+        self._session_saved = True
+        self._last_log_path = filepath
+        if self.analytics_window is not None:
+            self.analytics_window.notify_log_saved(filepath)
+        return filepath
+
+    def _on_live_log_exported(self, filepath: str) -> None:
+        """Treat an explicit live JSON export as a successful session save."""
+        self._session_saved = True
 
     def _on_load_video_clicked(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
@@ -367,6 +438,20 @@ class MainWindow(QMainWindow):
         was_running = self.config_panel.btn_run.isChecked()
         old_source = self.telemetry_source
         old_source.stop()
+        self._session_active = False
+        if (
+            self._session_started
+            and self.performance_logger.packets
+            and not self._session_saved
+            and self._finalize_session() is None
+        ):
+            if was_running:
+                self._session_active = True
+                old_source.start()
+            if hasattr(new_source, "shutdown"):
+                new_source.shutdown()
+            new_source.deleteLater()
+            return False
         try:
             old_source.telemetry_updated.disconnect(self._on_telemetry_updated)
         except RuntimeError:
@@ -382,7 +467,14 @@ class MainWindow(QMainWindow):
         self.chart_fps.clear()
         self.chart_err.clear()
         self.chart_lock.clear()
+        self.performance_logger.reset()
+        self._session_started = was_running
+        self._session_saved = False
+        self._last_log_path = None
+        if self.analytics_window is not None:
+            self.analytics_window.notify_session_reset()
         if was_running:
+            self._session_active = True
             self.telemetry_source.start()
         return True
 
@@ -393,6 +485,30 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         """Release timers and video handles before closing the cockpit."""
+        self.clock_timer.stop()
+        was_running = self._session_active
+        if was_running:
+            self.telemetry_source.stop()
+            self._session_active = False
+        if (
+            self._session_started
+            and self.performance_logger.packets
+            and not self._session_saved
+            and self._finalize_session() is None
+        ):
+            if was_running:
+                self._session_active = True
+                self.telemetry_source.start()
+            self._show_analytics()
+            if self.analytics_window is not None:
+                self.analytics_window.status_label.setText(
+                    "AUTOMATIC SAVE FAILED: export the live dataset to JSON before closing."
+                )
+            self.clock_timer.start(1000)
+            event.ignore()
+            return
+        if self.analytics_window is not None:
+            self.analytics_window.close()
         if hasattr(self.telemetry_source, "shutdown"):
             self.telemetry_source.shutdown()
         else:
@@ -400,6 +516,10 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def _on_telemetry_updated(self, packet: TelemetryPacket, image: np.ndarray) -> None:
+        self.performance_logger.record(packet)
+        if self._session_active:
+            self._session_saved = False
+
         # Update video pane
         self.video_pane.update_frame(packet, image)
 
