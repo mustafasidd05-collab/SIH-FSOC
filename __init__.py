@@ -1,0 +1,1 @@
+"""FSOC Coarse-Alignment Virtual Tracking Simulator (SIH 26169)."""

@@ -1,0 +1,9 @@
+numpy
+opencv-python
+scipy
+filterpy
+PySide6
+
+[dev]
+pytest
+pytest-qt

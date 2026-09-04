@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\hp\\SIH\\sih-26169-ui\\.venv\\Scripts\\python.exe",
+  "python.analysis.extraPaths": [
+    "C:\\Users\\hp\\SIH\\sih-26169-ui\\.venv\\Lib\\site-packages"
+  ]
+}

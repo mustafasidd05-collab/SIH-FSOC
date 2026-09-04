@@ -1,0 +1,258 @@
+/* ui/style.qss -- Mission-control dark QSS theme.
+   All hex color codes in this file MUST be present in ui/palette.py.
+*/
+
+/* Global Reset & Base Fonts */
+QWidget {
+    background-color: #0A0D0F;
+    color: #D9E0E4;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 11px;
+    selection-background-color: #1A2126;
+    selection-color: #D9E0E4;
+    border: none;
+    outline: none;
+}
+
+/* QMainWindow & Root Containers */
+QMainWindow, QDialog {
+    background-color: #0A0D0F;
+}
+
+/* Section Header Labels */
+QLabel#sectionHeader {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 9px;
+    font-weight: bold;
+    color: #93A0A8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Monospace Numerals & Telemetry */
+QLabel#monoNum, QLabel#telemetryNum {
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    color: #D9E0E4;
+}
+
+QLabel#telemetryLabel {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 9px;
+    color: #5B6770;
+    text-transform: uppercase;
+}
+
+/* Panels & Insets */
+QFrame#panelFrame, QFrame#configPanel {
+    background-color: #11161A;
+    border: 1px solid #232C33;
+    border-radius: 2px;
+}
+
+QFrame#insetFrame {
+    background-color: #0C1013;
+    border: 1px solid #232C33;
+    border-radius: 2px;
+}
+
+QFrame#raisedFrame {
+    background-color: #1A2126;
+    border: 1px solid #2E3A42;
+    border-radius: 2px;
+}
+
+/* Push Buttons (Idle, Hover, Pressed, Disabled) */
+QPushButton {
+    background-color: #1A2126;
+    color: #D9E0E4;
+    border: 1px solid #232C33;
+    border-radius: 2px;
+    padding: 5px 12px;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+QPushButton:hover {
+    background-color: #2E3A42;
+    color: #D9E0E4;
+    border: 1px solid #39C5CF;
+}
+
+QPushButton:pressed {
+    background-color: #0C1013;
+    color: #D9E0E4;
+    border: 1px solid #00E676;
+}
+
+QPushButton:disabled {
+    background-color: #0A0D0F;
+    color: #5B6770;
+    border: 1px solid #232C33;
+}
+
+QPushButton#runButton {
+    background-color: #1A2126;
+    color: #00E676;
+    border: 1px solid #00E676;
+    font-size: 11px;
+}
+
+QPushButton#runButton:hover {
+    background-color: #2E3A42;
+    color: #00E676;
+    border: 1px solid #00E676;
+}
+
+QPushButton#runButton:checked, QPushButton#runButton:pressed {
+    background-color: #0C1013;
+    color: #FF4D4F;
+    border: 1px solid #FF4D4F;
+}
+
+/* Sliders */
+QSlider::groove:horizontal {
+    border: 1px solid #232C33;
+    height: 4px;
+    background-color: #0C1013;
+    border-radius: 2px;
+}
+
+QSlider::sub-page:horizontal {
+    background-color: #2E3A42;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal {
+    background-color: #1A2126;
+    border: 1px solid #2E3A42;
+    width: 12px;
+    margin-top: -5px;
+    margin-bottom: -5px;
+    border-radius: 6px;
+}
+
+QSlider::handle:horizontal:hover {
+    background-color: #2E3A42;
+    border: 1px solid #39C5CF;
+}
+
+QSlider::handle:horizontal:disabled {
+    background-color: #0A0D0F;
+    border: 1px solid #39434A;
+}
+
+/* SpinBoxes & DoubleSpinBoxes */
+QSpinBox, QDoubleSpinBox {
+    background-color: #0C1013;
+    color: #D9E0E4;
+    border: 1px solid #232C33;
+    border-radius: 2px;
+    padding: 3px 6px;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+}
+
+QSpinBox:hover, QDoubleSpinBox:hover {
+    border: 1px solid #2E3A42;
+}
+
+QSpinBox:focus, QDoubleSpinBox:focus {
+    border: 1px solid #39C5CF;
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    background-color: #1A2126;
+    border: none;
+    width: 14px;
+}
+
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
+    background-color: #2E3A42;
+}
+
+/* Combo Box */
+QComboBox {
+    background-color: #1A2126;
+    color: #D9E0E4;
+    border: 1px solid #232C33;
+    border-radius: 2px;
+    padding: 4px 8px;
+}
+
+QComboBox:hover {
+    border: 1px solid #2E3A42;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #11161A;
+    color: #D9E0E4;
+    border: 1px solid #2E3A42;
+    selection-background-color: #1A2126;
+    selection-color: #D9E0E4;
+}
+
+/* Tooltips */
+QToolTip {
+    background-color: #11161A;
+    color: #D9E0E4;
+    border: 1px solid #2E3A42;
+    padding: 4px 8px;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 10px;
+}
+
+/* Scrollbars */
+QScrollBar:vertical, QScrollBar:horizontal {
+    background-color: #0A0D0F;
+    width: 8px;
+    height: 8px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background-color: #1A2126;
+    border-radius: 4px;
+    min-height: 20px;
+    min-width: 20px;
+}
+
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+    background-color: #2E3A42;
+}
+
+QScrollBar::add-line, QScrollBar::sub-line {
+    background: none;
+    border: none;
+}
+
+/* GroupBox */
+QGroupBox {
+    background-color: #11161A;
+    border: 1px solid #232C33;
+    border-radius: 2px;
+    margin-top: 12px;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 9px;
+    font-weight: bold;
+    color: #93A0A8;
+    text-transform: uppercase;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 8px;
+    padding: 0 4px;
+    background-color: #11161A;
+}
+
+/* Telemetry Strip Container */
+QFrame#telemetryStrip {
+    background-color: #0C1013;
+    border-top: 1px solid #2E3A42;
+    max-height: 56px;
+    min-height: 56px;
+}

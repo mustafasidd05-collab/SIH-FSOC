@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+build/
+!build/
+build/*
+!build/build_executable.spec
+tests/fixtures/clips/*.npz
+venv/
+training/dataset/
+tracking/model.pt

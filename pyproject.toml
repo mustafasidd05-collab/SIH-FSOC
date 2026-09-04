@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fsoc-sim"
+version = "0.1.0"
+description = "FSOC Coarse-Alignment Virtual Tracking Simulator (SIH 26169)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "opencv-python",
+    "scipy",
+    "filterpy",
+    "PySide6",
+    "PyYAML",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-qt",
+]
+training = [
+    "torch",
+    "onnx",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "sim*", "disturbance*", "tracking*", "control*", "ui*", "runtime*", "telemetry*", "config*", "training*"]
+
+[tool.setuptools.package-data]
+ui = ["style.qss"]
+config = ["default_config.yaml"]
+tracking = ["*.onnx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

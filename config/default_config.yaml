@@ -1,0 +1,41 @@
+# Default configuration for FSOC Coarse-Alignment Tracking Simulator (SIH 26169)
+
+simulation:
+  width_px: 640
+  height_px: 480
+  fps: 30.0
+  time_scale: 1.0
+
+camera:
+  fov_h_deg: 4.0
+  fov_v_deg: 3.0
+  pan_min_deg: -90.0
+  pan_max_deg: 90.0
+  tilt_min_deg: -90.0
+  tilt_max_deg: 90.0
+  max_speed_deg_s: 10.0
+
+target:
+  size_px: 12
+  shape: "square" # or "circular"
+  initial_velocity: 15.0 # m/s or px/s
+  motion_pattern: "linear" # linear, sinusoidal, lissajous, spiral
+
+disturbance:
+  profile: "moderate" # mild, moderate, severe
+  enable_turbulence: true
+  enable_occlusion: true
+  enable_motion_blur: true
+  enable_vibration: true
+  enable_sensor_noise: true
+
+tracking:
+  use_ai_filter: true
+  confidence_threshold: 0.5
+  gate_radius_px: 80.0
+
+control:
+  kp: 0.0003
+  ki: 0.00005
+  kd: 0.00002
+  max_output_step: 0.003
