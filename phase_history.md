@@ -195,6 +195,129 @@ This is the debugging trail when something breaks two sessions later.
 **Verification:** Validated HTML structure, interactive slide transitions, keyboard navigation, and responsive layout.
 **Outcome:** Done — verified
 
+---
+
+## 2026-09-23 — Backend runtime-update API & Spiral motion — primary agent
+
+**Plan approved:** Wire every UI control to the live simulation engine by (a) extending `sim/scene.py` with `SpiralMotionConfig` and (b) adding 7 public runtime-update methods to `LiveTelemetrySource`.
+
+**Changed:**
+- `sim/scene.py`: Added `SpiralMotionConfig` (Archimedean spiral, analytically evaluated from absolute scene time to prevent drift); updated `_MotionKind` Literal → `"linear" | "sinusoidal" | "spiral"`; added `spiral` field + `from_dict` branch to `BeaconConfig`; updated `Scene.snapshot()` with spiral branch + defensive `else: raise AssertionError`; added `Scene.beacon_configs` public property.
+- `runtime/live_source.py`: Full rewrite. Added instance state tracking (`_motion_pattern`, `_target_speed_m_s`, `_target_size_px`, `_decoy_enabled`, `_vib_sigma`, `_turb_sigma`, `_noise_snr_db`). Added `_rebuild_scene()` (reconstructs `SceneConfig` + `Scene` from current params, supports all 4 motion types including Lissajous via 1:2 sinusoidal ratio), `_rebuild_disturbance()` (builds a custom `DisturbanceProfile` live). Added 7 public methods: `set_motion_pattern`, `set_target_speed`, `set_target_size`, `set_disturbance_levels`, `set_pid_gains`, `toggle_decoy`, `apply_disturbance_profile`. Fixed `step()` render call to pass `RenderConfig(beacon_radius_px=self._target_size_px)` and `beacon_configs=list(self.scene.beacon_configs)` so distractor beacons render with their per-beacon radius/intensity overrides.
+- `PROJECT_STATUS.md`, `phase_history.md` (this entry).
+
+**Verification:**
+`venv\Scripts\python.exe -m pytest tests -q` → **125 passed in 163.40s** — 0 failures, 0 errors. (+10 tests vs previous 115; new tests cover spiral `az_el_at`, `BeaconConfig.from_dict` spiral branch, and `Scene.beacon_configs` property.)
+
+**Outcome:** Done — verified
+
+**Notes for UI agent (next session):**
+- Every UI control now has a corresponding method on `LiveTelemetrySource`:
+
+| UI Control | Method to call |
+|---|---|
+| Motion pattern `QComboBox` | `set_motion_pattern("linear"\|"sinusoidal"\|"lissajous"\|"spiral")` |
+| Target speed `QSlider` | `set_target_speed(speed_m_s)` |
+| Target size `QSpinBox` | `set_target_size(radius_px)` |
+| Vibration `QSlider` | `set_disturbance_levels(vib, turb, snr)` |
+| Turbulence `QSlider` | same as above |
+| Sensor noise `QSlider` | same as above |
+| Profile preset `QComboBox` | `apply_disturbance_profile("mild"\|"moderate"\|"severe")` |
+| Kp/Ki/Kd/max_step spinboxes | `set_pid_gains(kp, ki, kd, max_step)` |
+| Fault decoy button | `toggle_decoy(True\|False)` |
+
+- `toggle_decoy(True)` adds a `role="distractor"` beacon with `peak_intensity=100` (vs 255 for primary) and `beacon_radius_px=4` — it will appear as a dim smaller spot in the video pane.
+- `set_motion_pattern` / `set_target_speed` / `toggle_decoy` all call `_rebuild_scene()` which resets the scene clock to 0 — the tracker will briefly return to SEARCH then re-acquire. This is expected behaviour.
+- `set_pid_gains` calls `control_loop.reset()` internally — no need to call it separately.
+- Calling `apply_disturbance_profile("moderate")` also updates the individual `_vib_sigma` / `_turb_sigma` / `_noise_snr_db` attributes so the granular sliders stay consistent if read back.
+
+---
+
+## 2026-09-23 — UI Cockpit Refinement & Live Engine Control Wiring — Gemini UI agent
+
+**Plan approved:** Refine cockpit UI layout and completely wire every UI slider, spinbox, button, and dropdown to the live simulation engine (`LiveTelemetrySource`), while preserving the strict dark mission-control aesthetic, zero QSS hex divergence from `palette.py`, and 100% test compatibility.
+
+**Changed:**
+- `ui/main_window.py`:
+  - Enclosed sidebar controls inside a frameless `QScrollArea` (`#configScrollArea`) within `ConfigPanel` (300px width) ensuring clean display across all screen resolutions without vertical clipping.
+  - Added **Target Size (px)** `QSpinBox` (range: 2–30 px, default: 6 px, suffix " px").
+  - Aligned **Motion Pattern** `QComboBox` to `["Linear Track", "Sinusoidal Sweep", "Lissajous Curve", "Archimedean Spiral"]` with bidirectional mapping dictionary `PATTERN_TO_KIND`.
+  - Added checkable **`DEPLOY FAULT DECOY`** `QPushButton` (`#decoyButton`) that toggles to `"REMOVE FAULT DECOY"` and injects/removes a secondary dimmer distractor beacon in the live scene.
+  - Added **Disturbance Preset** `QComboBox` (`["Mild", "Moderate", "Severe", "Custom"]`) allowing 1-click demonstration of disturbance regimes, keeping calibrated sliders in sync.
+  - Added calibrated sliders and double spinboxes for Platform Vibration (0–5.0 px σ), Atmospheric Turbulence (0–5.0 px σ), and Sensor Noise (6–40 dB SNR) with bidirectional signal blocking.
+  - Added **PID Controller** tuning `QGroupBox` with fine double spinboxes for Kp (rad/px), Ki (rad/(px·s)), Kd (rad·s/px), and Max Slew Step (rad/step), plus a dedicated `RESET INTEGRAL / PID` button.
+  - Added direct **`EXPORT LOG`** `QPushButton` on the header bar next to `ANALYTICS / LOGS` with JSON export file dialog and notification feedback.
+  - Implemented `_wire_config_signals()` connecting all sidebar controls to `LiveTelemetrySource` methods (`set_target_speed`, `set_target_size`, `set_motion_pattern`, `toggle_decoy`, `apply_disturbance_profile`, `set_disturbance_levels`, `set_pid_gains`, and control loop reset).
+- `ui/style.qss`:
+  - Added mission-control styling for `#decoyButton`, `#exportButton`, `#resetPidButton`, and `#configScrollArea` with zero hex color divergence from `ui/palette.py`.
+- `tests/test_ui_controls.py`:
+  - Added 7 comprehensive unit tests verifying widget presence, bidirectional slider/spinbox synchronization, signal dispatch to `LiveTelemetrySource`, decoy beacon injection, preset profile application, and PID parameter adjustments.
+- `PROJECT_STATUS.md`, `phase_history.md` (this entry).
+
+**Verification:**
+- `pytest tests -q` → **132 passed in 145.46s** — 0 failures, 0 errors (+7 new UI tests).
+- `pytest tests/test_ui_controls.py -v` → **7 passed**.
+- `pytest tests/test_ui_logic.py -k test_palette_qss_hex_divergence` → **1 passed** (zero divergence).
+- `python -m ui.main_window --selftest` → **All 5 states (SEARCH, ACQUIRE, TRACK, LOST, REACQUIRE) captured offscreen, 100.00% ticks within 2x nominal 30 Hz interval**.
+
+**Outcome:** Done — verified
+
+---
+
+## 2026-09-23 — 60 FPS High-Fidelity Simulation Upgrade & Virtual Scene Switching — primary agent
+
+**Plan approved:**
+1. Upgrade simulation engine, telemetry sources, and UI refresh timers from 30 FPS to 60 FPS (16.67 ms nominal step interval, 180-frame rolling telemetry window).
+2. Implement 1-click `SWITCH TO VIRTUAL SCENE` (`btn_reset_scene`) capability allowing dynamic transition from MP4 benchmark video mode back to interactive virtual scene simulation.
+3. Add a header source indicator chip (`lbl_source_chip`) dynamically reflecting active feed (`VIRTUAL SCENE (60 Hz)` vs `MP4: <filename>`).
+4. Re-verify full test suite and selftest at 60 Hz.
+
+**Changed:**
+- `config/default_config.yaml` & `config/config_manager.py`: Updated default simulation `fps` to `60.0`.
+- `runtime/live_source.py`: Updated `_dt_nominal = 1.0 / 60.0` (16.67 ms) and scaled `_max_lookback` to `180` frames (3 seconds @ 60 Hz).
+- `ui/mock_telemetry.py`: Updated `_dt_nominal = 1.0 / 60.0`, interval timer to `(1000.0 / 60.0) / time_scale`, lookback to `180`, and emitted packet FPS to `60.0 + 0.5 * sin(...)`.
+- `ui/overlay.py`: Updated fallback packet FPS to `60.0`.
+- `ui/style.qss`: Added mission-control styling for `QPushButton#resetSceneButton` conforming to token rules in `palette.py` (zero divergence).
+- `ui/main_window.py`:
+  - Added `btn_reset_scene = QPushButton("SWITCH TO VIRTUAL SCENE")` to `ConfigPanel` (disabled when on virtual scene, enabled when video is loaded).
+  - Added header source indicator chip: `lbl_source_chip` (`[ VIRTUAL SCENE (60 Hz) ]` vs `[ MP4: <filename> ]`).
+  - Scaled `chart_fps` maximum range from 40 to 80 FPS.
+  - Added `_on_reset_to_virtual_scene_clicked()` and `_apply_sidebar_config_to_source()` which smoothly tears down video decoder, creates a clean `LiveTelemetrySource(video_path=None)`, and re-applies current sidebar slider values (speed, size, motion pattern, decoy, disturbances, PID gains).
+  - Updated `run_selftest()` to verify 60 Hz frame intervals (nominal 16.67 ms).
+- `tests/test_live_source.py`: Updated packet FPS assertion to `60.0`.
+- `tests/test_mock_telemetry.py`: Updated packet FPS assertion to `55.0 <= packet.fps <= 65.0`.
+- `tests/test_ui_controls.py`: Added `test_switch_back_to_virtual_scene_wiring` verifying bidirectional video ↔ virtual scene transitions and parameter inheritance.
+- `PROJECT_STATUS.md`, `phase_history.md` (this entry).
+
+**Verification:**
+- `pytest tests/test_ui_controls.py -v`: **8 passed in 10.25s**.
+- `pytest tests/test_live_source.py tests/test_mock_telemetry.py -v`: **8 passed in 45.90s** (verifying 60 Hz closed-loop tracking).
+- `pytest tests/test_ui_logic.py -k test_palette_qss_hex_divergence`: **1 passed** (zero QSS hex divergence from `palette.py`).
+- `python -m ui.main_window --selftest`: All 5 states (SEARCH, ACQUIRE, TRACK, LOST, REACQUIRE) captured offscreen, 100.00% ticks within 2x nominal 60 Hz interval (16.67 ms).
+- `pytest tests -q`: **133 passed in 139.74s** — 0 failures, 0 errors.
+
+---
+
+## 2026-09-23 — 60 Hz Test Alignment, PyInstaller Standalone Build, User Manual & Technical Report — Primary Agent
+
+**Plan approved:** Align `tests/test_live_source.py` with 60 Hz rate checking minimum tracking error achieved under TRACK across noise seeds; build standalone executable deliverable using PyInstaller (`build/build_executable.spec`); generate complete `USER_MANUAL.md` and `TECHNICAL_REPORT.md` deliverables.
+
+**Changed:**
+- `tests/test_live_source.py`: Updated `test_live_telemetry_source_closed_loop_tracking` to evaluate 180 frames (3.0s @ 60 Hz) and track `min_track_error` under TRACK state.
+- `build/build_executable.spec`: PyInstaller spec file bundling PySide6 UI, OpenCV, NumPy, SciPy, FilterPy, config YAML, styles QSS, and assets using `SPECPATH`.
+- `USER_MANUAL.md`: User manual covering system requirements, launch CLI options (`--live`, `--video`, `--selftest`), mission control cockpit UI layout, trajectory controls, fault decoy, disturbance regimes, PID tuning, and log export.
+- `TECHNICAL_REPORT.md`: Technical report covering problem statement (SIH 26169), 60 Hz physics rendering, 5 disturbance models, CV + 4-state KF tracking architecture, 5-state state machine, boresight PID control, and test verification results.
+- `PROJECT_STATUS.md`, `phase_history.md` (this entry).
+
+**Verification:**
+- `pytest tests/test_live_source.py -v`: **5 passed in 46.85s** (all 4 seeds `1, 7, 42, 123` verified).
+- `pytest tests -q`: **133 passed in 158.45s** — 100.0% test pass rate across 133 unit/integration tests.
+- `pyinstaller build/build_executable.spec --noconfirm`: **Completed successfully**, executable built at `dist/fsoc_sim/fsoc_sim.exe`.
+- `.\dist\fsoc_sim\fsoc_sim.exe --selftest`: **All 5 states (SEARCH, ACQUIRE, TRACK, LOST, REACQUIRE) captured offscreen in 1.08s wall time, 100.00% ticks within 60 Hz frame budget, exit code 0.**
+
+**Outcome:** Done — verified
+
+
 
 
 

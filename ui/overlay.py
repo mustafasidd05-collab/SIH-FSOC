@@ -258,7 +258,7 @@ class VideoPane(QWidget):
         right = rect.right() - margin
 
         pkt = self._packet
-        fps = pkt.fps if pkt else 30.0
+        fps = pkt.fps if pkt else 60.0
         frame_id = pkt.frame_id if pkt else 0
         state_str = pkt.track_state.value if pkt else "SEARCH"
         az_rad = pkt.error_az_rad if pkt else 0.0

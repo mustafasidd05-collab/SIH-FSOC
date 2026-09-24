@@ -30,7 +30,7 @@ class ConfigManager:
         
         # Fallback default dict if load fails
         return {
-            "simulation": {"width_px": 640, "height_px": 480, "fps": 30.0, "time_scale": 1.0},
+            "simulation": {"width_px": 640, "height_px": 480, "fps": 60.0, "time_scale": 1.0},
             "camera": {"fov_h_deg": 4.0, "fov_v_deg": 3.0, "max_speed_deg_s": 10.0},
             "target": {"size_px": 12, "motion_pattern": "linear"},
             "disturbance": {"profile": "moderate"},

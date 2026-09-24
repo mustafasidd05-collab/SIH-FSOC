@@ -3,7 +3,7 @@
 simulation:
   width_px: 640
   height_px: 480
-  fps: 30.0
+  fps: 60.0
   time_scale: 1.0
 
 camera:

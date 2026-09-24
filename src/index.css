@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-root: #0A0D0F;
+    --bg-panel: #11161A;
+    --bg-inset: #0C1013;
+    --bg-raised: #1A2126;
+    --line: #232C33;
+    --line-strong: #2E3A42;
+    --text-0: #D9E0E4;
+    --text-1: #93A0A8;
+    --text-2: #5B6770;
+    --off: #39434A;
+
+    --color-track: #00E676;
+    --color-acquire: #39C5CF;
+    --color-search: #FFB300;
+    --color-lost: #FF4D4F;
+    --color-reacquire: #B57CFF;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-root);
+    color: var(--text-0);
+  }
+
+  .font-mono-telemetry {
+    font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  }
+}
+
+/* Custom scrollbar for dark panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0C1013;
+}
+::-webkit-scrollbar-thumb {
+  background: #232C33;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2E3A42;
+}
+
+@keyframes pulse-lost {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.animate-lost-blink {
+  animation: pulse-lost 1s infinite;
+}

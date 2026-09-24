@@ -28,6 +28,7 @@ from sim.camera import boresight_az_el, is_visible
 __all__ = [
     "LinearMotionConfig",
     "SinusoidalMotionConfig",
+    "SpiralMotionConfig",
     "BeaconConfig",
     "SceneConfig",
     "Scene",
@@ -36,12 +37,19 @@ __all__ = [
 
 @dataclass(frozen=True)
 class LinearMotionConfig:
-    """Constant-velocity motion in az/el space: az(t) = az0 + az_rate * t."""
+    """Bounded continuous-sweep motion in az/el space.
+
+    When *sweep_range_rad* is positive the target sweeps back and forth
+    (smooth triangle wave) within ``[az0 - sweep, az0 + sweep]`` so it
+    never leaves the operational corridor.  When sweep is 0 the motion
+    is the original unbounded ``az0 + rate * t``.
+    """
 
     az0_rad: float
     el0_rad: float
     az_rate_rad_s: float
     el_rate_rad_s: float
+    sweep_range_rad: float = 0.0  # 0 = legacy unbounded; >0 = ping-pong
 
     @classmethod
     def from_dict(cls, d: dict) -> LinearMotionConfig:
@@ -50,10 +58,24 @@ class LinearMotionConfig:
             el0_rad=float(d["el0_rad"]),
             az_rate_rad_s=float(d.get("az_rate_rad_s", 0.0)),
             el_rate_rad_s=float(d.get("el_rate_rad_s", 0.0)),
+            sweep_range_rad=float(d.get("sweep_range_rad", 0.0)),
         )
 
+    @staticmethod
+    def _triangle(t: float, rate: float, sweep: float) -> float:
+        """Smooth triangle wave mapping *rate* and *sweep* to [-sweep, +sweep]."""
+        if sweep <= 0.0 or rate == 0.0:
+            return rate * t
+        period = (4.0 * sweep) / abs(rate)
+        phase = (t % period) / period          # 0 → 1
+        # triangle: 0→+1→0→-1→0  over one period
+        tri = 2.0 * abs(2.0 * (phase - math.floor(phase + 0.5))) - 1.0
+        return sweep * tri
+
     def az_el_at(self, t: float) -> tuple[float, float]:
-        return self.az0_rad + self.az_rate_rad_s * t, self.el0_rad + self.el_rate_rad_s * t
+        az = self.az0_rad + self._triangle(t, self.az_rate_rad_s, self.sweep_range_rad)
+        el = self.el0_rad + self._triangle(t, self.el_rate_rad_s, self.sweep_range_rad)
+        return az, el
 
 
 @dataclass(frozen=True)
@@ -96,7 +118,57 @@ class SinusoidalMotionConfig:
         return az, el
 
 
-_MotionKind = Literal["linear", "sinusoidal"]
+@dataclass(frozen=True)
+class SpiralMotionConfig:
+    """Bounded Archimedean spiral in az/el angle space.
+
+    r(t) = expansion_rate_rad_s * t
+    theta(t) = omega_rad_s * t + phase_rad
+    az(t) = az0 + r(t) * cos(theta(t))
+    el(t) = el0 + r(t) * sin(theta(t))
+
+    When *max_radius_rad* > 0 the radial expansion is bounded: the
+    radius smoothly oscillates between 0 and *max_radius_rad* using a
+    triangle wave, so the beacon spirals outward then contracts back
+    toward the center and never leaves the tracking corridor.
+    """
+
+    az0_rad: float
+    el0_rad: float
+    omega_rad_s: float           # angular sweep rate around the spiral (rad/s)
+    expansion_rate_rad_s: float  # radial expansion per second (rad/s)
+    phase_rad: float = 0.0       # initial angular phase offset
+    max_radius_rad: float = 0.0  # 0 = legacy unbounded; >0 = bounded oscillation
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SpiralMotionConfig":
+        return cls(
+            az0_rad=float(d["az0_rad"]),
+            el0_rad=float(d["el0_rad"]),
+            omega_rad_s=float(d.get("omega_rad_s", 0.1)),
+            expansion_rate_rad_s=float(d.get("expansion_rate_rad_s", 0.002)),
+            phase_rad=float(d.get("phase_rad", 0.0)),
+            max_radius_rad=float(d.get("max_radius_rad", 0.0)),
+        )
+
+    def az_el_at(self, t: float) -> tuple[float, float]:
+        r_raw = self.expansion_rate_rad_s * t
+        if self.max_radius_rad > 0.0 and self.expansion_rate_rad_s > 0.0:
+            # Triangle-wave bounce: radius oscillates 0 → max → 0 → max …
+            period = (2.0 * self.max_radius_rad) / self.expansion_rate_rad_s
+            phase = (t % period) / period   # 0 → 1
+            tri = 1.0 - abs(2.0 * phase - 1.0)  # 0→1→0 sawtooth
+            r = self.max_radius_rad * tri
+        else:
+            r = r_raw
+        theta = self.omega_rad_s * t + self.phase_rad
+        return (
+            self.az0_rad + r * math.cos(theta),
+            self.el0_rad + r * math.sin(theta),
+        )
+
+
+_MotionKind = Literal["linear", "sinusoidal", "spiral"]
 _RoleKind = Literal["primary", "distractor"]
 
 
@@ -112,6 +184,7 @@ class BeaconConfig:
     peak_intensity: float | None = None
     linear: LinearMotionConfig | None = None
     sinusoidal: SinusoidalMotionConfig | None = None
+    spiral: SpiralMotionConfig | None = None
 
     @classmethod
     def from_dict(cls, d: dict) -> BeaconConfig:
@@ -144,6 +217,17 @@ class BeaconConfig:
                 beacon_radius_px=radius_px,
                 peak_intensity=intensity,
                 sinusoidal=inner,
+            )
+        if motion == "spiral":
+            inner = SpiralMotionConfig.from_dict(d.get("spiral", d))
+            return cls(
+                target_id=int(d["target_id"]),
+                range_m=float(d.get("range_m", 1000.0)),
+                motion=motion,
+                role=role,
+                beacon_radius_px=radius_px,
+                peak_intensity=intensity,
+                spiral=inner,
             )
         raise ValueError(f"unknown motion type {motion!r}")
 
@@ -209,6 +293,11 @@ class Scene:
         """Attach the current gimbal pose for the next snapshot()."""
         self._camera = camera
 
+    @property
+    def beacon_configs(self) -> tuple["BeaconConfig", ...]:
+        """Read-only access to the current scene's beacon configurations."""
+        return self._config.beacons
+
     def snapshot(self) -> list[TargetState]:
         """Ground-truth TargetState for every beacon this instant.
 
@@ -225,9 +314,14 @@ class Scene:
             if beacon.motion == "linear":
                 assert beacon.linear is not None
                 az_abs, el_abs = beacon.linear.az_el_at(self._t_s)
-            else:
+            elif beacon.motion == "sinusoidal":
                 assert beacon.sinusoidal is not None
                 az_abs, el_abs = beacon.sinusoidal.az_el_at(self._t_s)
+            elif beacon.motion == "spiral":
+                assert beacon.spiral is not None
+                az_abs, el_abs = beacon.spiral.az_el_at(self._t_s)
+            else:  # pragma: no cover
+                raise AssertionError(f"unknown motion type {beacon.motion!r}")
 
             az_rel, el_rel = boresight_az_el(
                 az_abs, el_abs, self._camera.pan_rad, self._camera.tilt_rad

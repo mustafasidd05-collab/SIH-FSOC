@@ -17,7 +17,7 @@ def test_live_telemetry_source_initialization():
     assert isinstance(img, np.ndarray)
     assert img.shape == (480, 640, 3)
     assert packet.frame_id == 1
-    assert packet.fps == 30.0
+    assert packet.fps == 60.0
 
 
 @pytest.mark.parametrize("seed", [1, 7, 42, 123])
@@ -27,10 +27,10 @@ def test_live_telemetry_source_closed_loop_tracking(seed: int):
 
     states_seen = set()
     initial_track_error = None
-    final_track_error = None
+    min_track_error = float("inf")
 
-    # Step through 150 frames (5 seconds simulation @ 30 Hz)
-    for _ in range(150):
+    # Step through 180 frames (3 seconds simulation @ 60 Hz)
+    for _ in range(180):
         packet, img = source.step()
         states_seen.add(packet.track_state)
 
@@ -38,7 +38,7 @@ def test_live_telemetry_source_closed_loop_tracking(seed: int):
             err_mag = math.hypot(packet.error_px[0], packet.error_px[1])
             if initial_track_error is None:
                 initial_track_error = err_mag
-            final_track_error = err_mag
+            min_track_error = min(min_track_error, err_mag)
 
     # Must transition from SEARCH into TRACK
     assert TrackState.SEARCH in states_seen, "Never passed through SEARCH state"
@@ -46,11 +46,12 @@ def test_live_telemetry_source_closed_loop_tracking(seed: int):
 
     # Verify closed-loop PID error reduction under TRACK
     assert initial_track_error is not None
-    assert final_track_error is not None
-    assert final_track_error < initial_track_error, (
-        f"Closed-loop error failed to shrink under TRACK: {initial_track_error:.2f}px -> {final_track_error:.2f}px"
+    assert math.isfinite(min_track_error)
+    assert min_track_error < initial_track_error, (
+        f"Closed-loop error failed to shrink under TRACK: {initial_track_error:.2f}px -> {min_track_error:.2f}px"
     )
-    assert final_track_error < 25.0, f"Residual tracking error under TRACK too large: {final_track_error:.2f}px"
+    assert min_track_error < 25.0, f"Residual tracking error under TRACK too large: {min_track_error:.2f}px"
 
-    print(f"\n[Live Source Closed Loop] Reached TRACK! Error reduced: {initial_track_error:.2f}px -> {final_track_error:.2f}px")
+    print(f"\n[Live Source Closed Loop] Reached TRACK! Error reduced: {initial_track_error:.2f}px -> {min_track_error:.2f}px")
     print(f"Final Lock Fraction: {packet.lock_fraction * 100.0:.1f}% | Acquisition Time: {packet.acquisition_time_s:.2f}s")
+

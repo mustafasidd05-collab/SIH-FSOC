@@ -1,0 +1,8 @@
+{
+  "name": "FSOC Coarse-Alignment Tracking Simulator",
+  "description": "Virtual tracking simulator for Free Space Optical Communication (FSOC) coarse-alignment with computer vision, Kalman filter, closed-loop pan-tilt control, and real-time telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

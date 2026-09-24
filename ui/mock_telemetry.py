@@ -35,7 +35,7 @@ class MockTelemetrySource(QObject):
 
         self._frame_id = 0
         self._sim_time_s = 0.0
-        self._dt_nominal = 1.0 / 30.0  # 30 Hz
+        self._dt_nominal = 1.0 / 60.0  # 60 Hz
 
         # State schedule configuration: (state, duration_in_sim_seconds)
         self.schedule: List[Tuple[TrackState, float]] = [
@@ -51,7 +51,7 @@ class MockTelemetrySource(QObject):
 
         # Lookback buffer for lock fraction calculation
         self._recent_states: List[TrackState] = []
-        self._max_lookback = 90  # 3 seconds @ 30 Hz
+        self._max_lookback = 180  # 3 seconds @ 60 Hz
 
         self._acq_start_time_s: float | None = None
         self._acq_completed_time_s: float = float("nan")
@@ -64,8 +64,8 @@ class MockTelemetrySource(QObject):
         return self.schedule[self._schedule_idx][0]
 
     def start(self) -> None:
-        """Start emitting telemetry packets at 30 Hz (adjusted by time_scale)."""
-        interval_ms = int(max(1.0, (1000.0 / 30.0) / self.time_scale))
+        """Start emitting telemetry packets at 60 Hz (adjusted by time_scale)."""
+        interval_ms = int(max(1.0, (1000.0 / 60.0) / self.time_scale))
         self.timer.start(interval_ms)
 
     def stop(self) -> None:
@@ -140,7 +140,7 @@ class MockTelemetrySource(QObject):
         packet = TelemetryPacket(
             frame_id=self._frame_id,
             timestamp_s=self._sim_time_s,
-            fps=30.0 + 0.5 * math.sin(self._sim_time_s),
+            fps=60.0 + 0.5 * math.sin(self._sim_time_s),
             track_state=current_state,
             error_px=(err_x, err_y),
             error_az_rad=err_az_rad,

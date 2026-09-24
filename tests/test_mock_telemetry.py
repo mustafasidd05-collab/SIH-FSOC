@@ -56,7 +56,7 @@ def test_mock_telemetry_packet_fields_and_image():
     assert isinstance(packet, TelemetryPacket)
     assert packet.frame_id == 1
     assert packet.timestamp_s > 0.0
-    assert 25.0 <= packet.fps <= 35.0
+    assert 55.0 <= packet.fps <= 65.0
     assert isinstance(packet.track_state, TrackState)
     assert isinstance(packet.error_px, tuple) and len(packet.error_px) == 2
     assert 0.0 <= packet.lock_fraction <= 1.0

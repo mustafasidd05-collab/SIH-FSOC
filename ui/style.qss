@@ -111,6 +111,75 @@ QPushButton#runButton:checked, QPushButton#runButton:pressed {
     border: 1px solid #FF4D4F;
 }
 
+QPushButton#decoyButton {
+    background-color: #1A2126;
+    color: #D9E0E4;
+    border: 1px solid #232C33;
+}
+
+QPushButton#decoyButton:hover {
+    background-color: #2E3A42;
+    color: #FFB300;
+    border: 1px solid #FFB300;
+}
+
+QPushButton#decoyButton:checked {
+    background-color: #0C1013;
+    color: #FFB300;
+    border: 1px solid #FFB300;
+}
+
+QPushButton#exportButton {
+    background-color: #1A2126;
+    color: #39C5CF;
+    border: 1px solid #232C33;
+}
+
+QPushButton#exportButton:hover {
+    background-color: #2E3A42;
+    color: #39C5CF;
+    border: 1px solid #39C5CF;
+}
+
+QPushButton#resetPidButton {
+    background-color: #1A2126;
+    color: #93A0A8;
+    border: 1px solid #232C33;
+}
+
+QPushButton#resetPidButton:hover {
+    background-color: #2E3A42;
+    color: #D9E0E4;
+    border: 1px solid #2E3A42;
+}
+
+QPushButton#resetSceneButton {
+    background-color: #1A2126;
+    color: #D9E0E4;
+    border: 1px solid #232C33;
+}
+
+QPushButton#resetSceneButton:hover {
+    background-color: #2E3A42;
+    color: #39C5CF;
+    border: 1px solid #39C5CF;
+}
+
+QPushButton#resetSceneButton:disabled {
+    background-color: #0A0D0F;
+    color: #5B6770;
+    border: 1px solid #232C33;
+}
+
+QScrollArea#configScrollArea {
+    background-color: transparent;
+    border: none;
+}
+
+QScrollArea#configScrollArea > QWidget > QWidget {
+    background-color: transparent;
+}
+
 /* Sliders */
 QSlider::groove:horizontal {
     border: 1px solid #232C33;
