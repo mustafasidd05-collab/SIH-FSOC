@@ -4,8 +4,8 @@
 > the first thing a new agent (or Mustafa) reads to understand where things stand right
 > now. Do not let it become a changelog; that's what `phase_history.md` is for.
 
-**Last updated:** 2026-09-23 -- Gemini Primary Agent
-**Current phase:** All deliverables complete -- PyInstaller Standalone Executable (`dist/fsoc_sim/fsoc_sim.exe`), 133/133 passing unit/integration tests, `USER_MANUAL.md`, and `TECHNICAL_REPORT.md` verified.
+**Last updated:** 2026-09-24 -- Primary Agent
+**Current phase:** All deliverables complete & pushed -- PyInstaller Standalone Executable (`dist/fsoc_sim/fsoc_sim.exe`), 133/133 passing unit/integration tests, `README.md`, `USER_MANUAL.md`, and `TECHNICAL_REPORT.md` verified.
 
 ## Module status
 
