@@ -26,16 +26,16 @@ The application can be launched in multiple flexible operational modes via the c
 
 ```powershell
 # Mode 1: Interactive GUI with 60 Hz Synthetic Virtual Scene (Default)
-.\fsoc_sim.exe --live
+python -m ui.main_window
 
 # Mode 2: Interactive GUI with External Judge Benchmark Video (.mp4)
-.\fsoc_sim.exe --video "path\to\benchmark_clip.mp4"
+python -m ui.main_window --video "path/to/benchmark_clip.mp4"
 
 # Mode 3: Headless Offscreen Verification & Screenshot Audit
-.\fsoc_sim.exe --selftest
+python -m ui.main_window --selftest
 
 # Mode 4: Headless Video Evaluator Script (Export JSON report directly)
-python evaluate_video.py --video "path\to\benchmark_clip.mp4" --output "eval_results.json"
+python evaluate_video.py --video "path/to/benchmark_clip.mp4" --output "eval_results.json"
 ```
 
 ---

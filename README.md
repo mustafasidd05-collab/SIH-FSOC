@@ -82,10 +82,10 @@ python -m ui.main_window
 
 ```powershell
 # Interactive GUI tracking on custom video
-python -m ui.main_window --video "path/to/benchmark.mp4"
+python -m ui.main_window --video "path/to/benchmark_clip.mp4"
 
 # Headless evaluation with JSON performance log export
-python evaluate_video.py --video "path/to/benchmark.mp4" --output "eval_results.json"
+python evaluate_video.py --video "path/to/benchmark_clip.mp4" --output "eval_results.json"
 ```
 
 ### 4. Run Offscreen Self-Test & Screenshots
